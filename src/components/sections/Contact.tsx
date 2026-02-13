@@ -1,8 +1,13 @@
-import { MapPin, Phone, Mail, Clock, Send } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwXhSc-hOwumfZ_7kgHIMhqjPZ-B6CBDIwW-D37xJxpMtZd67T7K5jwvRX6V-7CZALX/exec";
 
 const Contact = () => {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -11,10 +16,33 @@ const Contact = () => {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log("Form submitted:", formData);
+    setIsSubmitting(true);
+
+    try {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      toast({
+        title: "Message Sent!",
+        description: "Thank you for reaching out. We'll get back to you soon.",
+      });
+
+      setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again or contact us directly.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -180,9 +208,13 @@ const Contact = () => {
                   />
                 </div>
 
-                <Button variant="hero" type="submit" className="w-full">
-                  <Send className="w-5 h-5 mr-2" />
-                  Send Message
+                <Button variant="hero" type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="w-5 h-5 mr-2" />
+                  )}
+                  {isSubmitting ? "Sending..." : "Send Message"}
                 </Button>
               </form>
             </div>
